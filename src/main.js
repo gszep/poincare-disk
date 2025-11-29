@@ -54,6 +54,22 @@ function render() {
         const transformedTile = tile.map(v => Hyperbolic.transform(v, viewTransform));
         renderer.drawPolygon(transformedTile, 'rgba(100, 200, 255, 0.2)');
     }
+
+    // Render data points
+    ctx.fillStyle = '#ffc444ff';
+    for (const point of dataPoints) {
+        const transformedPoint = Hyperbolic.transform(point, viewTransform);
+        // Only draw if inside the disk (approx)
+        if (transformedPoint.absSq() < 1.0) {
+            const screenPos = renderer.toScreen(transformedPoint);
+            ctx.beginPath();
+            // Use a fixed small size for markers, maybe slightly scaled by zoom but not linearly
+            // If zoom is 50, 3*50 = 150px is too big.
+            // Let's use fixed screen size.
+            ctx.arc(screenPos.re, screenPos.im, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+    }
 }
 
 canvas.addEventListener('mousedown', e => {
@@ -121,7 +137,7 @@ window.addEventListener('mousemove', e => {
 
 canvas.addEventListener('wheel', e => {
     e.preventDefault();
-    const zoomSpeed = 0.001;
+    const zoomSpeed = 0.001 * zoomLevel;
     zoomLevel -= e.deltaY * zoomSpeed;
     zoomLevel = Math.max(0.1, Math.min(zoomLevel, 50.0));
 
@@ -131,6 +147,19 @@ canvas.addEventListener('wheel', e => {
 });
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Load data
+let dataPoints = [];
+fetch('/src/data/example.csv')
+    .then(response => response.text())
+    .then(text => {
+        const lines = text.trim().split('\n');
+        dataPoints = lines.map(line => {
+            const [x, y] = line.split(',').map(Number);
+            return new Complex(x, y);
+        });
+        render();
+    });
 
 window.addEventListener('resize', resize);
 resize();
