@@ -19,6 +19,8 @@ const tiling = new Tiling(7, 3);
 // In a real app, we might want to generate dynamically based on view.
 const tiles = tiling.generateTiling(3);
 
+let zoomLevel = 1.0;
+
 function resize() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -27,7 +29,7 @@ function resize() {
     renderer.width = width;
     renderer.height = height;
     renderer.center = new Complex(width / 2, height / 2);
-    renderer.radius = Math.min(width, height) * 0.45;
+    renderer.radius = Math.min(width, height) * 0.45 * zoomLevel;
     render();
 }
 
@@ -114,6 +116,17 @@ window.addEventListener('mousemove', e => {
     // Yes.
 
     lastMousePos = currentMousePos;
+    render();
+});
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const zoomSpeed = 0.001;
+    zoomLevel -= e.deltaY * zoomSpeed;
+    zoomLevel = Math.max(0.1, Math.min(zoomLevel, 50.0));
+
+    // Update radius
+    renderer.radius = Math.min(width, height) * 0.45 * zoomLevel;
     render();
 });
 
